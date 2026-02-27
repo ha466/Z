@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BEST Ambulance Billing - Professional Edition</title>
+    <title>BEST Ambulance Billing - Hari's Edition</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- html2pdf.js -->
@@ -129,6 +129,15 @@
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="bills-grid">
             <!-- Cards -->
+        </div>
+
+        <!-- Empty State UI -->
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20 text-center">
+            <div class="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-300 mb-4">
+                <i data-lucide="file-text" class="w-10 h-10"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">No records found</h3>
+            <p class="text-sm text-slate-500">Click "New Bill" to create your first ambulance receipt.</p>
         </div>
     </main>
 
@@ -323,9 +332,13 @@
             }
         }
 
-        // Initialize Data
-       
-        ]);
+        // Generate Random Bill Number (e.g., 6 digits)
+        function generateRandomBillNo() {
+            return Math.floor(100000 + Math.random() * 900000);
+        }
+
+        // Initialize Data - Now starts with empty array if nothing in storage
+        bills = safeGetStorage('ambulance_bills', []);
 
         // Handle Logo Upload
         document.getElementById('logo-upload').addEventListener('change', function(e) {
@@ -365,56 +378,63 @@
         function renderBills() {
             const grid = document.getElementById('bills-grid');
             const countEl = document.getElementById('bill-count');
-            if(!grid || !countEl) return;
+            const emptyState = document.getElementById('empty-state');
+            
+            if(!grid || !countEl || !emptyState) return;
             
             grid.innerHTML = '';
             countEl.innerText = bills.length;
             safeSetStorage('ambulance_bills', bills);
 
-            bills.forEach((bill, idx) => {
-                const card = document.createElement('div');
-                card.className = "bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden";
-                card.innerHTML = `
-                    <div class="absolute top-0 right-0 px-4 py-2 bg-slate-50 border-b border-l border-slate-100 rounded-bl-2xl text-[10px] font-black text-slate-400">#${idx+1001}</div>
-                    
-                    <div class="flex items-center gap-4 mb-5">
-                        <div class="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-lg overflow-hidden">
-                            ${currentLogo ? `<img src="${currentLogo}" class="w-full h-full object-cover">` : bill.name.charAt(0)}
+            if (bills.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                bills.forEach((bill, idx) => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden";
+                    card.innerHTML = `
+                        <div class="absolute top-0 right-0 px-4 py-2 bg-slate-50 border-b border-l border-slate-100 rounded-bl-2xl text-[10px] font-black text-slate-400">#${bill.billNo || idx+1001}</div>
+                        
+                        <div class="flex items-center gap-4 mb-5">
+                            <div class="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-lg overflow-hidden">
+                                ${currentLogo ? `<img src="${currentLogo}" class="w-full h-full object-cover">` : bill.name.charAt(0)}
+                            </div>
+                            <div>
+                                <h4 class="font-extrabold text-slate-800 leading-tight">${bill.name}</h4>
+                                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">${bill.age} Yrs • ${bill.paymentMode}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="font-extrabold text-slate-800 leading-tight">${bill.name}</h4>
-                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">${bill.age} Yrs • ${bill.paymentMode}</p>
-                        </div>
-                    </div>
 
-                    <div class="space-y-3 mb-6">
-                        <div class="flex items-center gap-3 text-xs font-bold text-slate-500">
-                            <i data-lucide="map-pin" class="w-4 h-4 text-red-500"></i>
-                            <span class="truncate">${bill.address}</span>
+                        <div class="space-y-3 mb-6">
+                            <div class="flex items-center gap-3 text-xs font-bold text-slate-500">
+                                <i data-lucide="map-pin" class="w-4 h-4 text-red-500"></i>
+                                <span class="truncate">${bill.address}</span>
+                            </div>
+                            <div class="flex items-center gap-3 text-xs font-bold text-slate-500">
+                                <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+                                <span>${new Date(bill.date).toLocaleDateString()}</span>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-3 text-xs font-bold text-slate-500">
-                            <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
-                            <span>${new Date(bill.date).toLocaleDateString()}</span>
-                        </div>
-                    </div>
 
-                    <div class="flex items-center justify-between pt-4 border-t border-slate-50">
-                        <span class="text-2xl font-black text-slate-900">₹${bill.amount}</span>
-                        <div class="flex gap-2">
-                            <button onclick="downloadPDF(${idx})" class="p-2.5 bg-slate-900 text-white rounded-xl hover:scale-110 transition-transform shadow-lg shadow-slate-200">
-                                <i data-lucide="printer" class="w-4 h-4"></i>
-                            </button>
-                            <button onclick="openModal(${idx})" class="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200">
-                                <i data-lucide="pencil" class="w-4 h-4"></i>
-                            </button>
-                            <button onclick="deleteBill(${idx})" class="p-2.5 text-slate-300 hover:text-red-500 rounded-xl">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                            <span class="text-2xl font-black text-slate-900">₹${bill.amount}</span>
+                            <div class="flex gap-2">
+                                <button onclick="downloadPDF(${idx})" class="p-2.5 bg-slate-900 text-white rounded-xl hover:scale-110 transition-transform shadow-lg shadow-slate-200">
+                                    <i data-lucide="printer" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="openModal(${idx})" class="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteBill(${idx})" class="p-2.5 text-slate-300 hover:text-red-500 rounded-xl">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
+                    `;
+                    grid.appendChild(card);
+                });
+            }
             if(window.lucide) lucide.createIcons();
         }
 
@@ -457,6 +477,7 @@
         document.getElementById('bill-form').onsubmit = (e) => {
             e.preventDefault();
             const idx = parseInt(document.getElementById('edit-index').value);
+            
             const data = {
                 name: document.getElementById('patient-name').value,
                 age: document.getElementById('patient-age').value,
@@ -466,6 +487,7 @@
                 vehicleType: document.getElementById('vehicle-type').value,
                 paymentMode: document.getElementById('payment-mode').value,
                 amount: document.getElementById('amount').value,
+                billNo: idx > -1 ? bills[idx].billNo : generateRandomBillNo(),
                 id: idx > -1 ? bills[idx].id : Date.now()
             };
 
@@ -511,7 +533,7 @@
 
             // Sync PDF Data
             try {
-                document.getElementById('pdf-bill-no').innerText = idx + 1001;
+                document.getElementById('pdf-bill-no').innerText = bill.billNo || (idx + 1001);
                 document.getElementById('pdf-name').innerText = bill.name;
                 document.getElementById('pdf-age').innerText = bill.age + " Years";
                 document.getElementById('pdf-date').innerText = new Date(bill.date).toLocaleDateString('en-GB');
@@ -528,7 +550,7 @@
 
             const opt = {
                 margin: 0,
-                filename: `BEST_Ambulance_${bill.name.replace(/\s+/g, '_')}.pdf`,
+                filename: `BEST_Ambulance_Bill_${bill.billNo || 'Reciept'}.pdf`,
                 image: { type: 'jpeg', quality: 1 },
                 html2canvas: { 
                     scale: 3, 
