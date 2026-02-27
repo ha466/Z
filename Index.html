@@ -148,7 +148,7 @@
                 <div>Patient name : <span contenteditable="true" class="font-medium">Mr.V.Varatharaj</span></div>
                 <div>Vehicle no : <span contenteditable="true">TN 09 CC 4551</span></div>
                 <div>Type of Vehicle : <span contenteditable="true">Ambulance (OMNI)</span></div>
-                <div>Bill no : <span contenteditable="true">4856</span></div>
+                <div>Bill no : <span id="bill-no" contenteditable="true">4856</span></div>
             </div>
             
             <!-- Right Column -->
@@ -336,22 +336,29 @@
         function generatePDF() {
             const element = document.getElementById('invoice-canvas');
             
+            // Get Bill number safely
+            const billNoElement = document.getElementById('bill-no');
+            const billNo = billNoElement ? billNoElement.innerText.trim() : 'Draft';
+            const fileName = `Ambulance_Bill_${billNo}.pdf`;
+            
             // Temporarily add pdf-mode class to strip UI elements and highlights
             element.classList.add('pdf-mode');
 
             // Set PDF options for Half A4 (A5 Landscape)
-            // A5 landscape is exactly half an A4 sheet cut horizontally
             const opt = {
                 margin:       [0, 0, 0, 0], 
-                filename:     'Ambulance_Bill_' + document.querySelector('span[contenteditable="true"]:nth-of-type(3)').innerText + '.pdf',
-                image:        { type: 'jpeg', quality: 1.0 },
+                filename:     fileName,
+                image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-                jsPDF:        { unit: 'mm', format: 'a5', orientation: 'landscape' } // Changed format here!
+                jsPDF:        { unit: 'mm', format: 'a5', orientation: 'landscape' }
             };
 
             // Generate and save
             html2pdf().set(opt).from(element).save().then(() => {
                 // Restore UI after download starts
+                element.classList.remove('pdf-mode');
+            }).catch(err => {
+                console.error('PDF generation error:', err);
                 element.classList.remove('pdf-mode');
             });
         }
@@ -363,3 +370,4 @@
 </html>
 
 
+    
