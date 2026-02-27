@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editable Ambulance Bill (Half A4)</title>
+    <title> Ambulance Bill from hari</title>
     <!-- Tailwind CSS for layout and UI -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- html2pdf library for PDF generation -->
@@ -11,89 +11,76 @@
     <style>
         /* Custom styles for the Half A4 (A5 Landscape) print format */
         body {
-            background-color: #f3f4f6;
+            background-color: #e5e7eb;
             font-family: Arial, sans-serif;
         }
 
+        /* EXACT Half A4 Dimensions */
         .half-a4-paper {
             width: 210mm;
-            min-height: 148.5mm; /* Exactly half the height of an A4 sheet */
+            height: 148.5mm; /* Strictly fixed height */
             background: white;
             margin: 20px auto;
-            padding: 10mm 15mm; /* Slightly tighter padding to fit the half sheet */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 8mm 12mm; /* Tighter padding for A5 */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
             position: relative;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            overflow: hidden; /* Prevents layout breaking */
         }
 
         /* Editable fields styling */
         [contenteditable="true"] {
             outline: none;
-            border-bottom: 1px dashed transparent;
+            border-bottom: 1px dashed #d1d5db;
             transition: all 0.2s;
             display: inline-block;
-            min-width: 20px;
+            min-width: 15px;
         }
 
         [contenteditable="true"]:hover, [contenteditable="true"]:focus {
-            background-color: #fef08a; /* light yellow */
+            background-color: #fef08a;
             border-bottom: 1px dashed #ca8a04;
         }
 
-        /* Table styles to match the image */
+        /* Table styles */
         .bill-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
-            margin-bottom: 5px;
+            margin-top: 6px;
+            margin-bottom: 4px;
         }
 
         .bill-table th, .bill-table td {
             border: 1px solid #000;
-            padding: 6px;
+            padding: 4px 6px;
             vertical-align: top;
         }
         
-        /* Make Particulars column wide */
-        .bill-table th:nth-child(2), .bill-table td:nth-child(2) {
-            width: 70%;
-        }
+        .bill-table th:nth-child(2), .bill-table td:nth-child(2) { width: 70%; }
+        .bill-table th:nth-child(1), .bill-table td:nth-child(1) { width: 10%; text-align: center; }
+        .bill-table th:nth-child(3), .bill-table td:nth-child(3) { width: 20%; text-align: right; }
 
-        /* Make S.No and Amount columns fixed width */
-        .bill-table th:nth-child(1), .bill-table td:nth-child(1) {
-            width: 10%;
-            text-align: center;
-        }
-
-        .bill-table th:nth-child(3), .bill-table td:nth-child(3) {
-            width: 20%;
-            text-align: right;
-        }
-
-        /* Adjusted height for half page */
+        /* The main row needs a specific height to push footer down, but not overflow */
         .main-row td {
-            height: 120px; /* Reduced from 250px so it fits nicely on a half page */
+            height: 55px; /* Tuned perfectly for A5 Landscape */
             position: relative;
         }
 
-        /* Hide UI elements during print/pdf generation */
-        .no-print {
-            display: flex;
-        }
+        .no-print { display: flex; }
 
-        /* Ensure size looks good on mobile screens too */
+        /* Mobile scaling */
         @media (max-width: 800px) {
+            body { padding: 10px; }
             .half-a4-paper {
-                width: 100%;
-                margin: 0;
-                padding: 10px;
-                min-height: auto;
+                transform: scale(0.95);
+                transform-origin: top center;
+                margin: 0 auto;
             }
         }
         
-        /* When generating PDF, ensure styles are pristine */
+        /* Clean PDF output */
         .pdf-mode [contenteditable="true"] {
             border-bottom: none !important;
             background-color: transparent !important;
@@ -103,22 +90,18 @@
         }
     </style>
 </head>
-<body class="p-4 sm:p-8 flex flex-col items-center">
+<body class="flex flex-col items-center">
 
     <!-- Action Bar -->
-    <div class="no-print bg-white p-4 rounded-lg shadow-md mb-6 w-full max-w-4xl flex flex-wrap justify-between items-center gap-4 sticky top-4 z-50">
+    <div class="no-print bg-white p-4 rounded-lg shadow-md mb-4 mt-4 w-full max-w-[210mm] flex justify-between items-center z-50">
         <div>
-            <h2 class="text-xl font-bold text-gray-800">Ambulance Bill Editor (Half Page)</h2>
-            <p class="text-sm text-gray-500">Click any text to edit. Prints as half an A4 sheet.</p>
+            <h2 class="text-lg font-bold text-gray-800">Bill Editor from hari</h2>
         </div>
-        <div class="flex gap-3">
-            <button onclick="addRow()" class="px-4 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md font-medium transition">
-                + Add Item Row
+        <div class="flex gap-2">
+            <button onclick="addRow()" class="px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-sm font-medium transition">
+                + Row
             </button>
-            <button onclick="generatePDF()" class="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-md font-medium shadow-sm transition flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
+            <button onclick="generatePDF()" class="px-3 py-1.5 bg-green-600 text-white hover:bg-green-700 rounded text-sm font-medium shadow-sm transition flex items-center gap-1">
                 Download PDF
             </button>
         </div>
@@ -128,9 +111,9 @@
     <div id="invoice-canvas" class="half-a4-paper text-black">
         
         <!-- Header Section -->
-        <div class="text-center mb-3">
-            <h1 class="text-2xl font-bold tracking-wide" contenteditable="true">Priya Ambulance services</h1>
-            <div class="mt-1 text-[14px] leading-snug">
+        <div class="text-center mb-1.5">
+            <h1 class="text-[20px] font-bold tracking-wide" contenteditable="true">Priya Ambulance services</h1>
+            <div class="mt-0.5 text-[11px] leading-tight text-gray-900">
                 <div contenteditable="true">37, Kathir complex, Anusham Theatre east</div>
                 <div contenteditable="true">Udumalpet - 642 126</div>
                 <div>Cell : <span contenteditable="true">9443472989, 7604806685</span></div>
@@ -138,21 +121,21 @@
             </div>
         </div>
 
-        <hr class="border-t border-black mb-3">
+        <hr class="border-t border-black mb-2">
 
         <!-- Details Section -->
-        <div class="flex justify-between text-[14px] mb-3 gap-4">
+        <div class="flex justify-between text-[11px] mb-2 leading-relaxed">
             <!-- Left Column -->
-            <div class="flex flex-col gap-2 flex-1">
+            <div class="flex flex-col flex-1">
                 <div>To</div>
-                <div>Patient name : <span contenteditable="true" class="font-medium">Mr.V.Varatharaj</span></div>
+                <div>Patient name : <span contenteditable="true" class="font-bold">Mr.V.Varatharaj</span></div>
                 <div>Vehicle no : <span contenteditable="true">TN 09 CC 4551</span></div>
                 <div>Type of Vehicle : <span contenteditable="true">Ambulance (OMNI)</span></div>
                 <div>Bill no : <span id="bill-no" contenteditable="true">4856</span></div>
             </div>
             
             <!-- Right Column -->
-            <div class="flex flex-col gap-2 text-right">
+            <div class="flex flex-col text-right w-1/3">
                 <div>Date : <span contenteditable="true">08.08.2025</span></div>
                 <div>Age : <span contenteditable="true">54 / M</span></div>
                 <div class="mt-auto">Cash/Credit : <span contenteditable="true">Cash bill</span></div>
@@ -160,7 +143,7 @@
         </div>
 
         <!-- Table Section -->
-        <table class="bill-table text-[14px]" id="itemsTable">
+        <table class="bill-table text-[11px]" id="itemsTable">
             <thead>
                 <tr>
                     <th class="font-normal text-left pl-2">S.No</th>
@@ -170,67 +153,62 @@
             </thead>
             <tbody id="tableBody">
                 <tr class="main-row group">
-                    <td class="text-center pt-2">
+                    <td class="text-center pt-1">
                         <span contenteditable="true" class="sno">1</span>
                     </td>
-                    <td class="pt-2 pl-2 flex flex-col justify-between h-full">
+                    <td class="pt-1 pl-2 flex flex-col justify-between h-full">
                         <div>
                             <span contenteditable="true" class="w-full block">SV Puram ( UDT ) To Ganga Hospital ( CBE )</span>
                         </div>
-                        <div class="text-[12px] text-gray-700 mt-auto pb-1">
+                        <div class="text-[10px] text-gray-600 mt-auto pb-0.5">
                             <span contenteditable="true">Rent inclusive of all expenses</span>
                         </div>
                     </td>
-                    <td class="text-right pt-2 pr-2 relative">
+                    <td class="text-right pt-1 pr-2 relative">
                         <span contenteditable="true" class="amount" onkeyup="calculateTotal()">4200.00</span>
-                        <!-- Delete row button (hidden on print) -->
-                        <button onclick="removeRow(this)" class="no-print absolute -right-8 top-2 text-red-500 hover:text-red-700 hidden group-hover:block" title="Remove Row">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                        <button onclick="removeRow(this)" class="no-print absolute -right-6 top-1 text-red-500 hover:text-red-700 hidden group-hover:block">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                         </button>
                     </td>
                 </tr>
             </tbody>
         </table>
 
-        <!-- Total Section with Amount in Words -->
-        <div class="flex flex-col items-end mt-2 pr-2">
-            <div class="text-lg font-bold tracking-wide">
+        <!-- Total Section -->
+        <div class="flex flex-col items-end mt-1 pr-2">
+            <div class="text-[14px] font-bold">
                 Total amount <span id="finalTotal">4200.0</span>
             </div>
-            <!-- Auto generated words display -->
-            <div class="text-[12px] font-medium mt-1 text-gray-800 italic" id="amountInWords">
-                Rupees Four Thousand Two Hundred Only
+            <div class="text-[10px] font-medium text-gray-700 italic" id="amountInWords">
+                (Rupees Four Thousand Two Hundred Only)
             </div>
         </div>
 
-        <!-- Footer / Signatory Wrapper to push to bottom if needed -->
-        <div class="mt-auto pt-4">
-            <!-- Signatory Section -->
+        <!-- Footer fixed to bottom -->
+        <div class="mt-auto">
+            <!-- Signatory -->
             <div class="flex justify-end">
-                <div class="text-right text-[14px]">
-                    <div class="mb-6">For</div>
+                <div class="text-right text-[11px]">
+                    <div class="mb-4">For</div>
                     <div contenteditable="true">Priya Ambulance services</div>
                 </div>
             </div>
 
-            <!-- Footer Section -->
-            <div class="mt-6 text-center text-[13px]">
-                <div class="mb-1">Thank you</div>
-                <div class="text-[11px] uppercase tracking-wide" contenteditable="true">INDICA, OMNI, INNOVA AND ALL TYPES OF VECHILES AVAILABLE FOR TOUR & TRAVELS</div>
-                <div class="text-[11px] mt-0.5" contenteditable="true">( A UNIT OF UDUMALAI DIAGNOSTICES & X RAYS )</div>
+            <!-- Bottom Text -->
+            <div class="mt-2 text-center text-[10px] leading-tight">
+                <div class="mb-0.5 font-medium">Thank you</div>
+                <div class="text-[9px] uppercase" contenteditable="true">INDICA, OMNI, INNOVA AND ALL TYPES OF VECHILES AVAILABLE FOR TOUR & TRAVELS</div>
+                <div class="text-[9px]" contenteditable="true">( A UNIT OF UDUMALAI DIAGNOSTICES & X RAYS )</div>
             </div>
         </div>
 
     </div>
 
     <script>
-        // Number to words converter (Indian Numbering System)
         function numberToWords(amount) {
             if (isNaN(amount) || amount === 0) return "Rupees Zero Only";
-
             const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
             const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
             function convertWholeNumber(n) {
                 if (n < 20) return a[n];
                 if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : ' ');
@@ -239,70 +217,40 @@
                 if (n < 10000000) return convertWholeNumber(Math.floor(n / 100000)) + 'Lakh ' + (n % 100000 !== 0 ? convertWholeNumber(n % 100000) : '');
                 return convertWholeNumber(Math.floor(n / 10000000)) + 'Crore ' + (n % 10000000 !== 0 ? convertWholeNumber(n % 10000000) : '');
             }
-
-            let numStr = parseFloat(amount).toFixed(2);
-            let parts = numStr.split('.');
+            let parts = parseFloat(amount).toFixed(2).split('.');
             let rupees = parseInt(parts[0]);
             let paise = parseInt(parts[1]);
-
-            let res = '';
-            if (rupees > 0) {
-                res += 'Rupees ' + convertWholeNumber(rupees);
-            } else {
-                res += 'Rupees Zero ';
-            }
-
-            if (paise > 0) {
-                res += 'and ' + convertWholeNumber(paise) + 'Paise ';
-            }
-            
-            res += 'Only';
-            return res.replace(/\s+/g, ' ').trim();
+            let res = rupees > 0 ? 'Rupees ' + convertWholeNumber(rupees) : 'Rupees Zero ';
+            if (paise > 0) res += 'and ' + convertWholeNumber(paise) + 'Paise ';
+            return res.replace(/\s+/g, ' ').trim() + ' Only';
         }
 
-        // Function to calculate the total sum of all amounts
         function calculateTotal() {
             let total = 0;
-            const amounts = document.querySelectorAll('.amount');
-            amounts.forEach(el => {
+            document.querySelectorAll('.amount').forEach(el => {
                 let val = parseFloat(el.innerText);
-                if (!isNaN(val)) {
-                    total += val;
-                }
+                if (!isNaN(val)) total += val;
             });
-            
-            // Update the number display with 1 decimal place
             document.getElementById('finalTotal').innerText = total.toFixed(1);
-            
-            // Update the words display
             document.getElementById('amountInWords').innerText = "(" + numberToWords(total) + ")";
         }
 
-        // Function to add a new row
         function addRow() {
             const tbody = document.getElementById('tableBody');
-            const rowCount = tbody.children.length + 1;
-            
-            // Remove 'main-row' class from previous rows so only the first row is tall
             Array.from(tbody.children).forEach(row => {
                 row.classList.remove('main-row');
                 row.cells[1].style.height = 'auto'; 
                 row.cells[1].classList.remove('flex', 'flex-col', 'justify-between', 'h-full');
             });
-
             const tr = document.createElement('tr');
             tr.className = 'group';
             tr.innerHTML = `
-                <td class="text-center py-2">
-                    <span contenteditable="true" class="sno">${rowCount}</span>
-                </td>
-                <td class="py-2 pl-2">
-                    <span contenteditable="true" class="w-full block">New Particulars Description</span>
-                </td>
-                <td class="text-right py-2 pr-2 relative">
+                <td class="text-center py-1"><span contenteditable="true" class="sno">${tbody.children.length + 1}</span></td>
+                <td class="py-1 pl-2"><span contenteditable="true" class="w-full block">New Particulars</span></td>
+                <td class="text-right py-1 pr-2 relative">
                     <span contenteditable="true" class="amount" onkeyup="calculateTotal()">0.00</span>
-                    <button onclick="removeRow(this)" class="no-print absolute -right-8 top-2 text-red-500 hover:text-red-700 hidden group-hover:block" title="Remove Row">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                    <button onclick="removeRow(this)" class="no-print absolute -right-6 top-1 text-red-500 hover:text-red-700 hidden group-hover:block">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                     </button>
                 </td>
             `;
@@ -311,63 +259,44 @@
             reindexRows();
         }
 
-        // Function to remove a row
         function removeRow(btn) {
-            const row = btn.closest('tr');
-            const tbody = document.getElementById('tableBody');
-            if(tbody.children.length > 1) {
-                row.remove();
+            if(document.getElementById('tableBody').children.length > 1) {
+                btn.closest('tr').remove();
                 calculateTotal();
                 reindexRows();
-            } else {
-                alert("You must have at least one item row.");
-            }
+            } else alert("Must have at least one item.");
         }
 
-        // Re-index serial numbers when row is removed
         function reindexRows() {
-            const snos = document.querySelectorAll('.sno');
-            snos.forEach((el, index) => {
-                el.innerText = index + 1;
-            });
+            document.querySelectorAll('.sno').forEach((el, i) => el.innerText = i + 1);
         }
 
-        // Function to handle PDF generation
         function generatePDF() {
             const element = document.getElementById('invoice-canvas');
+            const billNo = document.getElementById('bill-no').innerText.trim() || 'Draft';
             
-            // Get Bill number safely
-            const billNoElement = document.getElementById('bill-no');
-            const billNo = billNoElement ? billNoElement.innerText.trim() : 'Draft';
-            const fileName = `Ambulance_Bill_${billNo}.pdf`;
-            
-            // Temporarily add pdf-mode class to strip UI elements and highlights
             element.classList.add('pdf-mode');
 
-            // Set PDF options for Half A4 (A5 Landscape)
             const opt = {
-                margin:       [0, 0, 0, 0], 
-                filename:     fileName,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+                margin:       0,
+                filename:     `Ambulance_Bill_${billNo}.pdf`,
+                image:        { type: 'jpeg', quality: 1 },
+                html2canvas:  { 
+                    scale: 3, // High quality 
+                    useCORS: true,
+                    windowWidth: 794 // Locks aspect ratio mapping to 210mm
+                },
                 jsPDF:        { unit: 'mm', format: 'a5', orientation: 'landscape' }
             };
 
-            // Generate and save
             html2pdf().set(opt).from(element).save().then(() => {
-                // Restore UI after download starts
-                element.classList.remove('pdf-mode');
-            }).catch(err => {
-                console.error('PDF generation error:', err);
                 element.classList.remove('pdf-mode');
             });
         }
 
-        // Initial calculation to set the total and words correctly
         calculateTotal();
     </script>
 </body>
 </html>
 
 
-    
